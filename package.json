@@ -1,0 +1,28 @@
+{
+  "name": "swagger-seneca-router",
+  "version": "1.0.0",
+  "description": "Node.js connect/express middleware for routing REST API calls to Seneca micro-services. This module is an extension to the the JavaScript swagger-tools module.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmccarthy-dev/swagger-seneca-router.git"
+  },
+  "keywords": [
+    "swagger",
+    "seneca",
+    "node.js",
+    "middleware"
+  ],
+  "author": "dmccarthy-dev@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dmccarthy-dev/swagger-seneca-router/issues"
+  },
+  "homepage": "https://github.com/dmccarthy-dev/swagger-seneca-router#readme",
+  "dependencies": {
+    "jsonic": "^0.3.0"
+  }
+}
