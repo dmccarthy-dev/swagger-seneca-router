@@ -7,7 +7,8 @@
     "test": "node_modules/.bin/mocha --recursive tests/*tests.js",
     "jshint": "node_modules/.bin/jshint index.js",
     "coverage": "nyc node_modules/.bin/mocha tests/*tests.js",
-    "coverage_html": "nyc --reporter=html node_modules/.bin/mocha  tests/*tests.js"
+    "coverage_html": "nyc --reporter=html node_modules/.bin/mocha  tests/*tests.js",
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -35,6 +36,7 @@
   ],
   "devDependencies": {
     "chai": "^4.1.2",
+    "coveralls": "^3.0.0",
     "jshint": "^2.9.5",
     "mocha": "^5.1.1",
     "nyc": "^11.7.1",
