@@ -12,18 +12,17 @@ const getBasePattern = function( operation ){
     if ( operation['x-seneca-pattern'] ) {
         return jsonic( operation['x-seneca-pattern'] );
     }
-    else if ( operation['x-swagger-router-controller'] && operation['operationId'] ) {
-        return jsonic( 'controller:' + operation['x-swagger-router-controller']
-                        + ',operation:' + operation['operationId'] );
+    else if ( operation['x-swagger-router-controller'] && operation.operationId ) {
+        return jsonic( 'controller:' + operation['x-swagger-router-controller'] + ',operation:' + operation.operationId );
     }
     else {
         throw new Error( 'Seneca pattern not found.' );
     }
-    
+
 };
 
 
-exports = module.exports = function ( senecaInstance ) {
+module.exports = function ( senecaInstance ) {
 
     return function (req, res, next ) {
 
@@ -48,7 +47,7 @@ exports = module.exports = function ( senecaInstance ) {
                 if ( result.headers ){
                     for ( let i in result.headers ){
                         if ( result.headers.hasOwnProperty( i )){
-                            res.setHeader( i )
+                            res.setHeader( i );
                         }
                     }
                 }

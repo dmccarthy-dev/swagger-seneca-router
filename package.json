@@ -4,7 +4,10 @@
   "description": "Node.js connect/express middleware for routing REST API calls to Seneca micro-services. This module is an extension to the the JavaScript swagger-tools module.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/.bin/mocha --recursive tests/*tests.js",
+    "jshint": "node_modules/.bin/jshint index.js",
+    "coverage": "nyc node_modules/.bin/mocha tests/*tests.js",
+    "coverage_html": "nyc --reporter=html node_modules/.bin/mocha  tests/*tests.js"
   },
   "repository": {
     "type": "git",
@@ -16,7 +19,7 @@
     "node.js",
     "middleware"
   ],
-  "author": "dmccarthy-dev@gmail.com",
+  "author": "Donal McCarthy (https://github.com/dmccarthy-dev)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/dmccarthy-dev/swagger-seneca-router/issues"
@@ -24,5 +27,17 @@
   "homepage": "https://github.com/dmccarthy-dev/swagger-seneca-router#readme",
   "dependencies": {
     "jsonic": "^0.3.0"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "index.js"
+  ],
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "jshint": "^2.9.5",
+    "mocha": "^5.1.1",
+    "nyc": "^11.7.1",
+    "rewire": "^4.0.0"
   }
 }
