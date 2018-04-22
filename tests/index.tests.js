@@ -16,9 +16,10 @@ describe('Test swagger-seneca-router middleware', function() {
 
         const mockOperation = { 'x-seneca-pattern' : 'service:math,cmd:list' };
 
-        swaggerSenecaRouterRW.__get__( 'getBasePattern' )( mockOperation ).should.deep.equal( { service: 'math', cmd: 'list' } );
+        swaggerSenecaRouterRW.__get__( 'resolveOperationPattern' )( mockOperation ).should.equal( 'service:math,cmd:list' );
 
     });
+
 
     it('test getBasePattern with x-swagger-router-controller and operationId', function () {
 
@@ -27,8 +28,18 @@ describe('Test swagger-seneca-router middleware', function() {
             'operationId'                 : 'getAllOrganisations',
         };
 
-        swaggerSenecaRouterRW.__get__( 'getBasePattern' )( mockOperation ).should.deep.equal(
-            { controller: 'Organisation', operation: 'getAllOrganisations' } );
+        swaggerSenecaRouterRW.__get__( 'resolveOperationPattern' )( mockOperation ).should.equal( 'controller:Organisation,operation:getAllOrganisations' );
+
+    });
+
+
+    it('test getBasePattern with operationId', function () {
+
+        const mockOperation = {
+            'operationId'                 : 'getAllOrganisations',
+        };
+
+        swaggerSenecaRouterRW.__get__( 'resolveOperationPattern' )( mockOperation ).should.equal( 'operation:getAllOrganisations' );
 
     });
 
