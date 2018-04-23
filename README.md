@@ -10,14 +10,14 @@ Swagger-seneca-router is a Node.js connect/express middleware for routing REST A
 - [Learn more about JavaScript Swagger Tools](https://github.com/apigee-127/swagger-tools)
 
 
-####Features
+#### Features
 - Translates incoming REST calls to Seneca patterns.
 - Build patterns based on x-swagger-router-controller and operationId values.
 - Alternatively, build patterns based on x-seneca-pattern values.
 - Converts Seneca result to http response.
 
 
-####Example
+#### Example
 
 Take the petstore-simple.yaml swagger definition that has a number of API endpoints for CRUDing Pet objects.
 
