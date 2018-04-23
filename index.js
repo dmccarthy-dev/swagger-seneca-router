@@ -1,47 +1,52 @@
 'use strict';
 
-var jsonic = require('jsonic');
+const jsonic = require('jsonic');
 
 /**
+ *
+ * Builds a Seneca pattern string based on swagger properties.
  *
  * @param operation
  * @returns {*}
  */
-var resolveOperationPattern = function( operation ){
+const resolveOperationPattern = function( operation ){
 
     if ( operation['x-seneca-pattern'] ) {
         return operation['x-seneca-pattern'] ;
     }
-    else if ( operation.operationId ) {
-        var pattern = '';
 
-        if ( operation['x-swagger-router-controller']) {
-            pattern += 'controller:' + operation['x-swagger-router-controller'] + ',';
-        }
+    let pattern = '';
 
+    if ( operation['x-swagger-router-controller'] ) {
+        pattern += 'controller:' + operation['x-swagger-router-controller'];
+    }
+
+    if ( operation['x-swagger-router-controller'] && operation.operationId ){
+        pattern +=  ',';
+    }
+
+    if ( operation.operationId ){
         pattern += 'operation:' + operation.operationId;
+    }
 
-        return pattern;
-    }
-    else {
-        //TODO: decide if middeware should next at this point. config option?
-        throw new Error( 'Seneca pattern not found.' );
-    }
+    return pattern;
 };
 
 
 /**
+ * Builds a seneca pattern object based on the swagger
+ * properties and query parameters.
  *
  * @param swagger
  * @returns {*}
  */
-var buildPattern = function( swagger ){
+const buildPattern = function( swagger ){
 
-    var patternStr = resolveOperationPattern( swagger.operation );
+    const patternStr = resolveOperationPattern( swagger.operation );
 
-    var pattern = jsonic ( patternStr );
+    const pattern = jsonic( patternStr );
 
-    for ( let i in swagger.params ) {
+    for ( const i in swagger.params ) {
         if ( swagger.params.hasOwnProperty( i )){
             pattern[i] = swagger.params[i].value;
         }
@@ -53,55 +58,89 @@ var buildPattern = function( swagger ){
 
 /**
  *
+ * Converts the seneca error output to https response.
+ *
  * @param res
  * @param err
  */
-var sendErr = function( res, err ){
+const sendErr = function( res, err ){
 
     if ( err.body ){
         sendResp( res, err );
     }
     else{
-        sendResp( res, { code : 500, body: err } )
+        sendResp( res, { code : 500, body: err } );
     }
 
 };
 
 
 /**
+ * Converts the seneca output to https response.
+ * It expects the seneca output object to contain
+ * a code,body and headers property.
  *
  * @param res
  * @param result
  */
-var sendResp = function( res, result ){
+const sendResp = function( res, result ){
 
     if ( result.headers ){
-        for ( let i in result.headers ){
-            if ( result.headers.hasOwnProperty( i )){
-                res.setHeader( i );
+        for ( const i of result.headers ){
+            for ( const j in i ){
+                res.setHeader( j, i[j] );
             }
         }
     }
 
-    var code = result.code ? result.code : 200;
+    const code = result.code ? result.code : 200;
 
     res.writeHead( code, {'Content-Type': 'application/json'} );
     res.end( JSON.stringify( result.body ) );
 };
 
 
+/**
+ * Validate that the options parameter contains valid options.
+ *
+ * @param options
+ */
+const validateOptions = function ( options ){
 
-module.exports = function ( senecaInstance ) {
+    if ( !options.senecaClient || !options.senecaClient.act ){
+        throw new Error( 'senecaClient is required.' );
+    }
+
+};
+
+
+/**
+ * Check that the swagger operation has properties that we can use to create a
+ * seneca pattern.
+ *
+ * @param operation
+ * @returns {boolean}
+ */
+const hasPattern = ( operation ) => {
+
+    return !!( operation['x-seneca-pattern'] || operation['x-swagger-router-controller'] || operation.operationId );
+
+};
+
+
+module.exports = function ( options ) {
+
+    validateOptions( options );
 
     return function (req, res, next ) {
 
-        if ( !req.swagger ){
+        if ( !req.swagger || !hasPattern( req.swagger.operation )){
             next();
         }
 
-        var pattern = buildPattern( req.swagger );
+        const pattern = buildPattern( req.swagger );
 
-        senecaInstance.act( pattern, function ( err, result ) {
+        options.senecaClient.act( pattern, function ( err, result ) {
             if (err) {
                 sendErr( res, err );
             }
