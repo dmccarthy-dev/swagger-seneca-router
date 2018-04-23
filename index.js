@@ -66,6 +66,11 @@ const buildPattern = function( swagger ){
 const sendErr = function( res, err ){
 
     if ( err.body ){
+
+        if ( !err.code ){
+            err.code = 500;
+        }
+
         sendResp( res, err );
     }
     else{
@@ -80,23 +85,41 @@ const sendErr = function( res, err ){
  * It expects the seneca output object to contain
  * a code,body and headers property.
  *
+ *  The result object can have the following structure:
+ *  {
+ *      headers : {
+ *          'Content-Type' : 'application/json'
+ *      }
+ *      code: 200,
+ *      body: {
+ *          a : 2,
+ *          b : true
+ *      }
+ *  }
+ *
+ *
  * @param res
  * @param result
  */
 const sendResp = function( res, result ){
 
     if ( result.headers ){
-        for ( const i of result.headers ){
-            for ( const j in i ){
-                res.setHeader( j, i[j] );
+        for ( const name in result.headers ){
+            if ( result.headers.hasOwnProperty( name ) ){
+                res.setHeader( name, result.headers[name] );
             }
         }
     }
 
     const code = result.code ? result.code : 200;
+    const body = result.body ? result.body : ( code === 201 || code === 204 ? undefined : result );
 
-    res.writeHead( code, {'Content-Type': 'application/json'} );
-    res.end( JSON.stringify( result.body ) );
+    if ( body && (!result.headers || !result.headers['Content-Type']) ){
+        res.setHeader( 'Content-Type', 'application/json' );
+    }
+
+    res.writeHead( code );
+    res.end( JSON.stringify( body ) );
 };
 
 
@@ -107,7 +130,7 @@ const sendResp = function( res, result ){
  */
 const validateOptions = function ( options ){
 
-    if ( !options.senecaClient || !options.senecaClient.act ){
+    if ( !options || !options.senecaClient || !options.senecaClient.act ){
         throw new Error( 'senecaClient is required.' );
     }
 
@@ -135,7 +158,7 @@ module.exports = function ( options ) {
     return function (req, res, next ) {
 
         if ( !req.swagger || !hasPattern( req.swagger.operation )){
-            next();
+            return next();
         }
 
         const pattern = buildPattern( req.swagger );
