@@ -4,6 +4,7 @@ module.exports = {
         summary: 'Get a single Organisation.',
         description: 'Gets an `Organisation` entry.\n',
         operationId: 'getOrganisation',
+        'x-swagger-router-controller': 'something'
     },
     params: {
         organisationId:
@@ -21,7 +22,6 @@ module.exports = {
                         description: 'The organisations Id',
                         required: true,
                         type: 'string',
-                        'x-regex-constraints': '^[a-z0-9]{18}$'
                     },
                 originalValue: '4n5pxq24kpiob12og8',
                 value: '4n5pxq24kpiob12og8'
@@ -41,7 +41,6 @@ module.exports = {
                         description: 'The API version',
                         required: true,
                         type: 'string',
-                        'x-regex-constraints': '^v\\d{1}$'
                     },
                 originalValue: 'v1',
                 value: 'v1'
@@ -49,5 +48,5 @@ module.exports = {
     },
     operationPath: ['paths',
         '/api/{apiVersion}/organisations/{organisationId}',
-        'get']
+        'get'],
 };

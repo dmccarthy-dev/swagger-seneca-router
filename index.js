@@ -2,6 +2,7 @@
 
 const jsonic = require('jsonic');
 
+
 /**
  *
  * Builds a Seneca pattern string based on swagger properties.
@@ -12,7 +13,7 @@ const jsonic = require('jsonic');
 const resolveOperationPattern = function( operation ){
 
     if ( operation['x-seneca-pattern'] ) {
-        return operation['x-seneca-pattern'] ;
+        return operation['x-seneca-pattern'];
     }
 
     let pattern = '';
@@ -58,12 +59,63 @@ const buildPattern = function( swagger ){
 
 /**
  *
+ *
+ * @param val the config value for this error.
+ * @param err
+ * @param context
+ * @returns {*}
+ */
+const handleSenecaError = ( val, err, context ) => {
+
+    if ( !val || val === 'error' ){
+        return context.next( err );
+    }
+    else if( val === 'next'  ){
+        context.next();
+    }
+    else if( val === 'response'  ){
+        sendResp( { code : 500, body : err }, context );
+    }
+    else if( 0 === val.indexOf( 'jsonic' ) ){
+        const message = jsonic( val );
+        sendResp(  message.jsonic, context );
+    }
+    else{
+        return context.next( err );
+    }
+};
+
+
+/**
+ *
  * Converts the seneca error output to https response.
  *
- * @param res
  * @param err
+ * @param context
+ * @param context.req
+ * @param context.res
+ * @param context.next
+ * @param context.options
  */
-const sendErr = function( res, err ){
+const handleErr = function( err, context){
+
+    if ( err.seneca ){
+
+        if ( !context.options.senecaErrorMode ) {
+            return context.next( err );
+        }
+
+        if ( context.options.senecaErrorMode[err.code] ){
+            return handleSenecaError( context.options.senecaErrorMode[err.code], err, context );
+        }
+
+        if ( context.options.senecaErrorMode.default ){
+            return handleSenecaError( context.options.senecaErrorMode.default, err, context );
+        }
+
+        return context.next( err );
+    }
+
 
     if ( err.body ){
 
@@ -71,10 +123,10 @@ const sendErr = function( res, err ){
             err.code = 500;
         }
 
-        sendResp( res, err );
+        sendResp( err, context );
     }
     else{
-        sendResp( res, { code : 500, body: err } );
+        sendResp( { code : 500, body: err }, context );
     }
 
 };
@@ -98,10 +150,12 @@ const sendErr = function( res, err ){
  *  }
  *
  *
- * @param res
  * @param result
+ * @param context
  */
-const sendResp = function( res, result ){
+const sendResp = function( result, context ){
+
+    const res = context.res;
 
     if ( result.headers ){
         for ( const name in result.headers ){
@@ -126,6 +180,8 @@ const sendResp = function( res, result ){
 /**
  * Validate that the options parameter contains valid options.
  *
+ *
+ *
  * @param options
  */
 const validateOptions = function ( options ){
@@ -134,6 +190,64 @@ const validateOptions = function ( options ){
         throw new Error( 'senecaClient is required.' );
     }
 
+    if ( options.hasOwnProperty( 'matchXSenecaPatternsOnly' ) && typeof options.matchXSenecaPatternsOnly !== 'boolean' ){
+        throw new Error( 'Invalid matchXSenecaPatternsOnly, the value must have a boolean value.' );
+    }
+
+    if ( options.patternNotFoundMode ) {
+
+        if ( -1 === ['error', 'next' ].indexOf( options.patternNotFoundMode ) && !isValidJsonicConfig( options.patternNotFoundMode ) ) {
+            throw new Error('Invalid value for patternNotFoundMode.');
+        }
+    }
+
+    if ( options.defaultErrorCode &&
+        ( typeof options.defaultErrorCode !== "number" ||
+            options.defaultErrorCode < 0 ||
+            options.defaultErrorCode > 600 ) ){
+        throw new Error( 'Invalid defaultErrorCode, the value must be number between 0 and 600.' );
+    }
+
+
+    if ( options.senecaCallbackOverride && typeof options.senecaCallbackOverride !== "function"){
+        throw new Error( 'Invalid senecaCallbackOverride, the value must be a function.' );
+    }
+
+    if ( options.senecaErrorMode ) {
+
+        if ( typeof  options.senecaErrorMode !== 'object'){
+            throw new Error( 'Invalid senecaErrorMode, the value must be an object.' );
+        }
+
+        for ( const i in options.senecaErrorMode ){
+            const val = options.senecaErrorMode[i];
+
+            if ( -1 === ['error', 'next', 'response' ].indexOf( val ) && !isValidJsonicConfig( val ) ) {
+                throw new Error('Invalid value for senecaErrorMode entry: ' + i );
+            }
+        }
+
+    }
+
+};
+
+
+/**
+ *
+ * Validates that jsonic config is valid.
+ *
+ * @param str
+ * @returns {boolean}
+ */
+const isValidJsonicConfig = function ( str ) {
+
+    try{
+        const obj = jsonic( str );
+        return !!obj.jsonic;
+    }
+    catch (e) {
+        return false;
+    }
 };
 
 
@@ -142,33 +256,79 @@ const validateOptions = function ( options ){
  * seneca pattern.
  *
  * @param operation
+ * @param context
+ * @param context.options
  * @returns {boolean}
  */
-const hasPattern = ( operation ) => {
+const hasPattern = ( operation, context ) => {
 
-    return !!( operation['x-seneca-pattern'] || operation['x-swagger-router-controller'] || operation.operationId );
+    if ( context.options.matchXSenecaPatternsOnly ) return !!operation['x-seneca-pattern'];
+
+    return !!( operation['x-seneca-pattern'] || ( operation['x-swagger-router-controller'] && operation.operationId ) );
 
 };
 
 
+/**
+ *
+ *
+ * @param context
+ * @returns {*}
+ */
+const handlePatternNotFound = ( context ) => {
+
+    const options = context.options;
+
+    if ( !options.patternNotFoundMode || options.patternNotFoundMode === 'next' ){
+        return context.next();
+    }
+    else if( options.patternNotFoundMode === 'error'  ){
+        context.next( new Error('Swagger Pattern not found') );
+    }
+    else if( 0 === options.patternNotFoundMode.indexOf( 'jsonic' ) ){
+        const message = jsonic(options.patternNotFoundMode);
+        sendResp( message.jsonic, context );
+    }
+    else{
+        return context.next();
+    }
+};
+
+
+/**
+ * @param options
+ * @param options.senecaClient
+ * @param options.patternNotFoundMode
+ * @param options.matchXSenecaPatternsOnly
+ * @param options.defaultErrorCode
+ * @param options.senecaErrorMode
+ * @param options.senecaCallbackOverride
+ * @returns {Function}
+ */
 module.exports = function ( options ) {
 
     validateOptions( options );
 
     return function (req, res, next ) {
 
-        if ( !req.swagger || !hasPattern( req.swagger.operation )){
-            return next();
+        const context = { req : req, res : res, next : next, options : options};
+
+        if ( !req.swagger || !hasPattern( req.swagger.operation, context )){
+            return handlePatternNotFound( context );
         }
 
-        const pattern = buildPattern( req.swagger );
+        context.pattern = buildPattern( req.swagger );
 
-        options.senecaClient.act( pattern, function ( err, result ) {
-            if (err) {
-                sendErr( res, err );
+        options.senecaClient.act( context.pattern, function ( err, result ) {
+
+            if ( options.senecaCallbackOverride ) {
+                return options.senecaCallbackOverride( err, result, context );
+            }
+            else if (err) {
+                handleErr( err, context );
             }
             else {
-                sendResp( res, result );
+                sendResp( result, context );
             }
         });
     };
