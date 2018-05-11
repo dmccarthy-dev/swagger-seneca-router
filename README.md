@@ -2,9 +2,13 @@
 [![Build Status][travis-badge]][travis-url]
 [![Coverage Status][coveralls-status-badge]][coveralls-status-url]
 [![Known Vulnerabilities][snyk-badge]][snyk-url]
+[![Documentation][inch-badge]][inch-url]
+[![Maintainability][codeclimate-badge]][codeclimate-url]
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/dmccarthy-dev/swagger-seneca-router/blob/master/LICENSE)
 
-Swagger-seneca-router is a Node.js connect/express middleware for routing REST API calls to Seneca micro-services. This module depends on the Swagger JavaScript tools module. 
+Swagger-seneca-router is a Node.js connect/express middleware for routing REST API calls to Seneca micro-services based on a Swagger specification. The idea is that you work at the schema level in Swagger and the business logic level in Seneca. No need to write boiler plate code!
+
+This module depends on the Swagger JavaScript tools module. 
 
 This guide assumes that you have some knowledge of Connect, Connect Middleware, Swagger, Swagger JavaScript Tools, Seneca, and Seneca Mesh. Check out the following links if you are not familiar with any of these components. 
 
@@ -32,10 +36,12 @@ This guide assumes that you have some knowledge of Connect, Connect Middleware, 
 - Translates incoming REST calls to Seneca patterns.
 - Build patterns based on x-swagger-router-controller and operationId values.
 - Alternatively, build patterns based on x-seneca-pattern values.
-- Converts Seneca result to http response.
+- Converts Seneca result data to http response (Supports http code, headers, and response body).
+- Has multiple options for handling errors: supports middleware next(), middleware error(), output error in response and custom jsonic responses.
+- A config option to override the function that handles the seneca err/result.   
 
 
-### Background
+#### Background
 
 The Swagger JavaScript Tools is a Node.js and browser module that provides tooling around Swagger specifications. The project has a number of middleware modules that add structure and constrains to a Connect server. Their module includes:
 
@@ -55,7 +61,7 @@ In summary their middlewares parse incoming request, validates the request again
 npm install swagger-seneca-router
 ```
 
-### Sample Usage
+#### Sample Usage
 
 ```JavaScript
 'use strict';
@@ -132,12 +138,12 @@ app.use( function (req, res, next) {
 ```
 
 
-### Matching API calls to Seneca Pattern 
+#### Matching API calls to Seneca Pattern 
 
 The swagger-seneca-router middleware builds Seneca pattern objects based on the Swagger operation associated with the incoming http request. By default the pattern is a simple JavaScript object with the properties: controller and operation. The controller value is set to the (unofficial) Swagger property `x-swagger-router-controller` and the operation value is set to the (official) Swagger property `operationId`. The parameters that are associated with the incoming request are also attached to the pattern object. We can override the default pattern detection behaviour by including the unofficial swagger option `x-seneca-pattern` with a [jsonic value](https://github.com/rjrodger/jsonic); by including `x-seneca-pattern` the `x-swagger-router-controller` and `operationId` values are ignored.
 
 
-### Swagger to Seneca Pattern Examples
+#### Swagger to Seneca Pattern Examples
 
 When parsing following Swagger operation our middleware would use the `x-swagger-router-controller` and `operationId` values to create the pattern `{ controller : "petstore", operation : "addPet", "pet" : { name : "foo" } }`. On our Seneca micro-service we need to add a function that acts on the `controller:petstore,operation:addPet` pattern.  
 
@@ -194,7 +200,7 @@ We can override the default pattern detection behaviour by including the `x-sene
     x-seneca-pattern: "service:storage,action:addPet"
 ```  
 
-### Seneca Result and Error object
+#### Seneca Result and Error object
 Extracting patterns from incoming requests is only half the story; the other half is converting the data emitted from our Seneca micro-service into a http response. The result and error objects can be structured two ways: 1) with the properties code, body, and headers or 2) just plain object. When the code, body, or header is not detected the object is stringified and sent as the http response. By default the http code is set to 200 for a result and 500 for an error.   
 
 If the result object is as follows:
@@ -253,7 +259,7 @@ X-Powered-By: Something\r\n
 
 ```
 
-### Syntax
+#### Syntax
 
 ```JavaScript
 const swaggerSenecaRouter = require( 'swagger-seneca-router' );
@@ -274,7 +280,7 @@ app.use( swaggerSenecaRouter( options ) );
     - *error* (default) Calls the next function with the Seneca error object passed as a parameter. You need to attach an error handler to the Connect app to deal with the errors. 
     - *next*  Calls the Connect next function without passing the error object. This will move the process on to the next middleware function.
     - *response* Output the Seneca Error message in the http response.
-    - *jsonic:<jsonic message>* Send a jsonic response object. e.g. `jsonic:body:{errCode:3322,errMessage:Opps, our servers appear to be down!}}`.
+    - *jsonic:<jsonic message>* Send a jsonic response object. e.g. `jsonic:{body:{errCode:3322,errMessage:"Oops, our servers appear to be down!"}}`.
     
         Sample senecaErrorMode object:
         ```json
@@ -327,6 +333,8 @@ swaggerSenecaRouter( {
 } )
 ```
 
+#### Sample project on GitHub
+[https://github.com/dmccarthy-dev/swagger-seneca-sample](https://github.com/dmccarthy-dev/swagger-seneca-sample)
 
 #### Complete Example
 
@@ -604,7 +612,7 @@ Start the connect server in another process:
 node index.js
 ```
 
-Load the swagger UI on http://localhost:8081/docs and hit the try it out buttons.
+Load the swagger UI on http://localhost:8080/docs and hit the try it out buttons.
 
 
 
@@ -620,4 +628,9 @@ Licensed under __[MIT][Licence]__.
 [coveralls-status-url]: https://coveralls.io/github/dmccarthy-dev/swagger-seneca-router?branch=master
 [snyk-badge]: https://snyk.io/test/github/dmccarthy-dev/swagger-seneca-router/badge.svg?targetFile=package.json
 [snyk-url]: https://snyk.io/test/github/dmccarthy-dev/swagger-seneca-router?targetFile=package.json
+[inch-badge]: https://inch-ci.org/github/dmccarthy-dev/swagger-seneca-router.svg?branch=master
+[inch-url]: https://inch-ci.org/github/dmccarthy-dev/swagger-seneca-router
+[codeclimate-badge]: https://api.codeclimate.com/v1/badges/16c13b555b2ee31b9d8a/maintainability
+[codeclimate-url]: https://codeclimate.com/github/dmccarthy-dev/swagger-seneca-router/maintainability
+
 [Licence]: ./LICENSE
