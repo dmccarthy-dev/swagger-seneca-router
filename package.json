@@ -1,6 +1,6 @@
 {
   "name": "swagger-seneca-router",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Swagger-seneca-router is Connect middleware for routing Swagger managed REST API calls to Seneca micro-services. ",
   "main": "index.js",
   "scripts": {
